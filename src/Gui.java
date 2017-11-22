@@ -4,11 +4,23 @@ import org.eclipse.swt.*;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.*;
 
 public class Gui {
+	static Display display;
+	static Shell shell;
+	static Deck set;
+	static ArrayList<Card> board_cards;
 	static ArrayList<Card> clicked_cards = new ArrayList<Card>();
+	static ArrayList<Composite> composites = new ArrayList<Composite>();
+	static ArrayList<Button> buttons = new ArrayList<Button>();
+	
+	static Label dialog;
+	static Button no_set;
+	static Label point_record;
+	static int points;
 	
 	public static Button generate_card_button(Display display, Composite composite, Card card) {
 		String image_name = "data/" + card.get_picture_name() + ".png";
@@ -19,158 +31,228 @@ public class Gui {
 		return button;
 	}
 	
-	public static void initial_buttons(Display display, Shell shell, ArrayList<Card> cards) {
+	public static void draw_new_cards() {
+		ArrayList<Card> new_cards = set.draw_card(3);
+		for(int i = 0;i < 3; i++) {
+			String image_name = "data/" + new_cards.get(i).get_picture_name() + ".png";
+			Image image = new Image(display, image_name);
+			buttons.get(board_cards.indexOf(clicked_cards.get(i))).setImage(image);
+			
+			board_cards.set(board_cards.indexOf(clicked_cards.get(i)), new_cards.get(i));
+		}
+	}
+	
+	public static boolean GUI_check_set() {
+		for(int i = 0;i < 3; i++) {
+			clicked_cards.get(i).printout();
+		}
+		
+		if(Set.check_set(clicked_cards.get(0), clicked_cards.get(1), clicked_cards.get(2))) {
+			System.out.println("Set");
+			draw_new_cards();
+    		clicked_cards.clear();
+    		dialog.setText("\n\nWell Done. That is a Set.");
+    		points++;
+    		point_record.setText("\n\nYou have got " + points + " set.");
+			return true;
+		}
+		else {
+			dialog.setText("\n\nSorry. That is not a Set.");
+			clicked_cards.clear();
+			return false;
+		}
+	}
+	
+	public static void initial_buttons(Shell shell, ArrayList<Card> cards) {
 
-		Composite composite1 = new Composite(shell, 0);
-		composite1.setLayout(new FillLayout());
-		Composite composite2 = new Composite(shell, 0);
-		composite2.setLayout(new FillLayout());
-		Composite composite3 = new Composite(shell, 0);
-		composite3.setLayout(new FillLayout());
+		// generate composites
+		for(int i = 0;i < 4; i++) {
+			Composite composite = new Composite(shell, 0);
+			composite.setLayout(new FillLayout());
+			composites.add(composite);
+		}
+		
+		Composite left = new Composite(composites.get(3), 0);
+		left.setLayout(new FillLayout());
+		Composite right = new Composite(composites.get(3), 0);
+		right.setLayout(new FillLayout());
+		
+		dialog = new Label(left, SWT.READ_ONLY | SWT.CENTER);
+		dialog.setText("\n\nWelcome to Set");
+		
+		no_set = new Button(right, SWT.PUSH);
+		no_set.setText("No Set exists.");
+		no_set.addListener(SWT.Selection, new Listener() {
+	        public void handleEvent(Event e) {
+	          switch (e.type) {
+	          case SWT.Selection:
+	      		if(!Set.exist_set(board_cards)) dialog.setText("\n\nThere are no Set. Add 3 more cards.");
+	      		else dialog.setText("\n\nBe patient. There is Set exists.");
+	            break;
+	    }}});
+		
+		point_record = new Label(right, SWT.READ_ONLY | SWT.CENTER);
+		point_record.setText("\n\nYou have got " + points + " set.");
 		
 		// generate new buttons
-		Button button1 = generate_card_button(display, composite1, cards.get(0));
-		Button button2 = generate_card_button(display, composite2, cards.get(1));
-		Button button3 = generate_card_button(display, composite3, cards.get(2));
-		Button button4 = generate_card_button(display, composite1, cards.get(3));
-		Button button5 = generate_card_button(display, composite2, cards.get(4));
-		Button button6 = generate_card_button(display, composite3, cards.get(5));
-		Button button7 = generate_card_button(display, composite1, cards.get(6));
-		Button button8 = generate_card_button(display, composite2, cards.get(7));
-		Button button9 = generate_card_button(display, composite3, cards.get(8));
-		Button button10 = generate_card_button(display, composite1, cards.get(9));
-		Button button11 = generate_card_button(display, composite2, cards.get(10));
-		Button button12 = generate_card_button(display, composite3, cards.get(11));
-	    
+		for(int i = 0;i < 12; i++) {
+			Button button = generate_card_button(display, composites.get(i % 3), cards.get(i));
+			buttons.add(button);
+		}
+		
 		// add listener to each button
-	    button1.addListener(SWT.Selection, new Listener() {
+	    buttons.get(0).addListener(SWT.Selection, new Listener() {
 	        public void handleEvent(Event e) {
 	          switch (e.type) {
 	          case SWT.Selection:
-	        	if(clicked_cards.size() == 2) {
-	        		clicked_cards.add(cards.get(0));
-	        		
-	        		clicked_cards.clear();
-	        		for(int i = 0;i < clicked_cards.size(); i++) {
-	        			clicked_cards.get(i).printout();
-	        		}
-	        	}
-	        	else {
-	        		clicked_cards.add(cards.get(0));
-	        		for(int i = 0;i < clicked_cards.size(); i++) {
-	        			clicked_cards.get(i).printout();
-	        		}
-	        	}
-	        	System.out.println(clicked_cards.size());
-	        	System.out.println("Button 1 has been clicked");
+	        	int button_num = 0;
+	        	if(clicked_cards.contains(cards.get(button_num))) break;
+        		clicked_cards.add(cards.get(button_num));
+	        	if(clicked_cards.size() == 3) GUI_check_set();
 	            break;
 	    }}});
 	    
-	    button2.addListener(SWT.Selection, new Listener() {
+	    buttons.get(1).addListener(SWT.Selection, new Listener() {
 	        public void handleEvent(Event e) {
 	          switch (e.type) {
 	          case SWT.Selection:
-	        	System.out.println("Button 2 has been clicked");
-	            break;
+	        	  int button_num = 1;
+		        	if(clicked_cards.contains(cards.get(button_num))) break;
+	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
 	    }}});
 	    
-	    button3.addListener(SWT.Selection, new Listener() {
+	    buttons.get(2).addListener(SWT.Selection, new Listener() {
 	        public void handleEvent(Event e) {
 	          switch (e.type) {
 	          case SWT.Selection:
-	        	System.out.println("Button 3 has been clicked");
-	            break;
+	        	  int button_num = 2;
+		        	if(clicked_cards.contains(cards.get(button_num))) break;
+	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
 	    }}});
 	    
-	    button4.addListener(SWT.Selection, new Listener() {
+	    buttons.get(3).addListener(SWT.Selection, new Listener() {
 	        public void handleEvent(Event e) {
 	          switch (e.type) {
 	          case SWT.Selection:
-	        	System.out.println("Button 4 has been clicked");
-	            break;
+	        	  int button_num = 3;
+		        	if(clicked_cards.contains(cards.get(button_num))) break;
+	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
 	    }}});
 	    
-	    button5.addListener(SWT.Selection, new Listener() {
+	    buttons.get(4).addListener(SWT.Selection, new Listener() {
 	        public void handleEvent(Event e) {
 	          switch (e.type) {
 	          case SWT.Selection:
-	        	System.out.println("Button 5 has been clicked");
-	            break;
+	        	  int button_num = 4;
+		        	if(clicked_cards.contains(cards.get(button_num))) break;
+	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
 	    }}});
 	    
-	    button6.addListener(SWT.Selection, new Listener() {
+	    buttons.get(5).addListener(SWT.Selection, new Listener() {
 	        public void handleEvent(Event e) {
 	          switch (e.type) {
 	          case SWT.Selection:
-	        	System.out.println("Button 6 has been clicked");
-	            break;
+	        	  int button_num = 5;
+		        	if(clicked_cards.contains(cards.get(button_num))) break;
+	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
 	    }}});
 	    
-	    button7.addListener(SWT.Selection, new Listener() {
+	    buttons.get(6).addListener(SWT.Selection, new Listener() {
 	        public void handleEvent(Event e) {
 	          switch (e.type) {
 	          case SWT.Selection:
-	        	System.out.println("Button 7 has been clicked");
-	            break;
+	        	  int button_num = 6;
+		        	if(clicked_cards.contains(cards.get(button_num))) break;
+	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
 	    }}});
 	    
-	    button8.addListener(SWT.Selection, new Listener() {
+	    buttons.get(7).addListener(SWT.Selection, new Listener() {
 	        public void handleEvent(Event e) {
 	          switch (e.type) {
 	          case SWT.Selection:
-	        	System.out.println("Button 8 has been clicked");
-	            break;
+	        	  int button_num = 7;
+		        	if(clicked_cards.contains(cards.get(button_num))) break;
+
+	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
 	    }}});
 	    
-	    button9.addListener(SWT.Selection, new Listener() {
+	    buttons.get(8).addListener(SWT.Selection, new Listener() {
 	        public void handleEvent(Event e) {
 	          switch (e.type) {
 	          case SWT.Selection:
-	        	System.out.println("Button 9 has been clicked");
-	            break;
+	        	  int button_num = 8;
+		        	if(clicked_cards.contains(cards.get(button_num))) break;
+	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
 	    }}});
 	    
-	    button10.addListener(SWT.Selection, new Listener() {
+	    buttons.get(9).addListener(SWT.Selection, new Listener() {
 	        public void handleEvent(Event e) {
 	          switch (e.type) {
 	          case SWT.Selection:
-	        	System.out.println("Button 10 has been clicked");
-	            break;
+	        	  int button_num = 9;
+		        	if(clicked_cards.contains(cards.get(button_num))) break;
+	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
 	    }}});
 
-	    button11.addListener(SWT.Selection, new Listener() {
+	    buttons.get(10).addListener(SWT.Selection, new Listener() {
 	        public void handleEvent(Event e) {
 	          switch (e.type) {
 	          case SWT.Selection:
-	        	System.out.println("Button 11 has been clicked");
-	            break;
+	        	  int button_num = 10;
+		        	if(clicked_cards.contains(cards.get(button_num))) break;
+	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
 	    }}});
 
-	    button12.addListener(SWT.Selection, new Listener() {
+	    buttons.get(11).addListener(SWT.Selection, new Listener() {
 	        public void handleEvent(Event e) {
 	          switch (e.type) {
 	          case SWT.Selection:
-	        	System.out.println("Button 12 has been clicked");
-	            break;
+	        	  int button_num = 11;
+		        	if(clicked_cards.contains(cards.get(button_num))) break;
+	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
 	    }}});
 	}
 	
 	public static void main(String args[]) {
-		Display display = new Display();
-		Shell shell = new Shell(display);
+		display = new Display();
+		shell = new Shell(display);
 		shell.setText("Set");
-		shell.setSize(500, 250);
+		shell.setSize(600, 400);
+		Image image = new Image(display, "images/set.jpg");
+		shell.setImage(image);
 		
 		FillLayout fillLayout = new FillLayout();
 		fillLayout.type = SWT.VERTICAL;
 		shell.setLayout(fillLayout);
 		
 		// generate a new deck and initial the cards
-		Deck set = new Deck();
+		set = new Deck();
 		set.shuffle();
-		ArrayList<Card> board_cards = set.initialization();
+		board_cards = set.initialization();
 		
-		initial_buttons(display, shell, board_cards);
+		initial_buttons(shell, board_cards);
 		
 		shell.open();
 		while(!shell.isDisposed())

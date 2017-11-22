@@ -8,7 +8,7 @@ public class Deck {
 	static String[] shapes;
 	static String[] shadings;
 	
-	ArrayList<Card> deck;
+	static ArrayList<Card> deck;
 	
 	public Deck() {
 		quantities = new String [N];
