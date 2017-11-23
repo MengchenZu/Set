@@ -16,6 +16,7 @@ public class Gui {
 	static ArrayList<Card> clicked_cards = new ArrayList<Card>();
 	static ArrayList<Composite> composites = new ArrayList<Composite>();
 	static ArrayList<Button> buttons = new ArrayList<Button>();
+	static ArrayList<Integer> empty_buttons = new ArrayList<Integer>();
 	
 	static Label dialog;
 	static Button no_set;
@@ -32,14 +33,81 @@ public class Gui {
 	}
 	
 	public static void draw_new_cards() {
-		ArrayList<Card> new_cards = set.draw_card(3);
+		if(board_cards.size() == 12) {
+			ArrayList<Card> new_cards = set.draw_card(3);
+			for(int i = 0;i < 3; i++) {
+				String image_name = "data/" + new_cards.get(i).get_picture_name() + ".png";
+				Image image = new Image(display, image_name);
+				buttons.get(board_cards.indexOf(clicked_cards.get(i))).setImage(image);
+				board_cards.set(board_cards.indexOf(clicked_cards.get(i)), new_cards.get(i));
+			}
+		} else if(board_cards.size() == 15) {
+			for(int i = 2;i >= 0; i--) {
+				String image_name = "data/" + board_cards.get(i + 12).get_picture_name() + ".png";
+				Image image = new Image(display, image_name);
+				buttons.get(board_cards.indexOf(clicked_cards.get(i))).setImage(image);
+				board_cards.set(board_cards.indexOf(clicked_cards.get(i)), board_cards.get(i + 12));
+				
+				image_name = "data/empty.png";
+				image = new Image(display, image_name);
+				buttons.get(i + 12).setImage(image);
+				board_cards.remove(i + 12);
+			}
+		} else if(board_cards.size() == 18) {
+			for(int i = 2;i >= 0; i--) {
+				String image_name = "data/" + board_cards.get(i + 15).get_picture_name() + ".png";
+				Image image = new Image(display, image_name);
+				buttons.get(board_cards.indexOf(clicked_cards.get(i))).setImage(image);
+				board_cards.set(board_cards.indexOf(clicked_cards.get(i)), board_cards.get(i + 15));
+				
+				image_name = "data/empty.png";
+				image = new Image(display, image_name);
+				buttons.get(i + 15).setImage(image);
+				board_cards.remove(i + 15);
+			}
+		}
+	}
+	
+	public static void check_congratulation() {
+		ArrayList<Card> last_cards = new ArrayList<Card>();
+		for(int i = 0;i < board_cards.size(); i++) {
+			if(!empty_buttons.contains(i)) last_cards.add(board_cards.get(i));
+		}
+		if(!Set.exist_set(last_cards)) {
+			Shell congratulation = new Shell(shell);
+			congratulation.setText("Congratulation!");
+			congratulation.setSize(200, 200);
+			congratulation.open();
+
+			FillLayout fillLayout = new FillLayout();
+			fillLayout.type = SWT.VERTICAL;
+			congratulation.setLayout(fillLayout);
+			
+			Label congratulation_text = new Label(congratulation, SWT.READ_ONLY | SWT.CENTER);
+			congratulation_text.setText("Congratulation!!!");
+			
+			//TODO restart
+			Button close = new Button(congratulation, SWT.PUSH);
+			close.setText("Close");
+			
+			close.addListener(SWT.Selection, new Listener() {
+		        public void handleEvent(Event e) {
+		          switch (e.type) {
+		          case SWT.Selection:
+		        	display.dispose();
+		            break;
+		    }}});
+		}
+	}
+	
+	public static void check_end() {
 		for(int i = 0;i < 3; i++) {
-			String image_name = "data/" + new_cards.get(i).get_picture_name() + ".png";
+			String image_name = "data/empty.png";
 			Image image = new Image(display, image_name);
 			buttons.get(board_cards.indexOf(clicked_cards.get(i))).setImage(image);
-			
-			board_cards.set(board_cards.indexOf(clicked_cards.get(i)), new_cards.get(i));
+			empty_buttons.add(board_cards.indexOf(clicked_cards.get(i)));
 		}
+		check_congratulation();
 	}
 	
 	public static boolean GUI_check_set() {
@@ -48,9 +116,9 @@ public class Gui {
 		}
 		
 		if(Set.check_set(clicked_cards.get(0), clicked_cards.get(1), clicked_cards.get(2))) {
-			System.out.println("Set");
-			draw_new_cards();
-    		clicked_cards.clear();
+			if(set.deck_size() != 0) draw_new_cards();
+			else check_end();
+			clicked_cards.clear();
     		dialog.setText("\n\nWell Done. That is a Set.");
     		points++;
     		point_record.setText("\n\nYou have got " + points + " set.");
@@ -63,7 +131,7 @@ public class Gui {
 		}
 	}
 	
-	public static void initial_buttons(Shell shell, ArrayList<Card> cards) {
+	public static void initial_buttons() {
 
 		// generate composites
 		for(int i = 0;i < 4; i++) {
@@ -86,7 +154,24 @@ public class Gui {
 	        public void handleEvent(Event e) {
 	          switch (e.type) {
 	          case SWT.Selection:
-	      		if(!Set.exist_set(board_cards)) dialog.setText("\n\nThere are no Set. Add 3 more cards.");
+	      		if(!Set.exist_set(board_cards)) {
+	      			dialog.setText("\n\nThere are no Set. Add 3 more cards.");
+	      			ArrayList<Card> new_cards = set.draw_card(3);
+	      			board_cards.addAll(new_cards);
+	      			if(board_cards.size() == 15) {
+	      				for(int i = 12;i < 15; i++) {
+		      				String image_name = "data/" + board_cards.get(i).get_picture_name() + ".png";
+		      				Image image = new Image(display, image_name);
+		      				buttons.get(i).setImage(image);
+	      				}
+	      			} else if(board_cards.size() == 18) {
+	      				for(int i = 15;i < 18; i++) {
+		      				String image_name = "data/" + board_cards.get(i).get_picture_name() + ".png";
+		      				Image image = new Image(display, image_name);
+		      				buttons.get(i).setImage(image);
+	      				}
+	      			}
+	      		}
 	      		else dialog.setText("\n\nBe patient. There is Set exists.");
 	            break;
 	    }}});
@@ -96,8 +181,16 @@ public class Gui {
 		
 		// generate new buttons
 		for(int i = 0;i < 12; i++) {
-			Button button = generate_card_button(display, composites.get(i % 3), cards.get(i));
+			Button button = generate_card_button(display, composites.get(i % 3), board_cards.get(i));
 			buttons.add(button);
+		}
+		
+		for(int i = 12;i < 18; i++) {
+			String image_name = "data/empty.png";
+			Image image = new Image(display, image_name);
+		    Button button = new Button(composites.get(i % 3), SWT.PUSH);
+		    button.setImage(image);
+		    buttons.add(button);
 		}
 		
 		// add listener to each button
@@ -106,8 +199,8 @@ public class Gui {
 	          switch (e.type) {
 	          case SWT.Selection:
 	        	int button_num = 0;
-	        	if(clicked_cards.contains(cards.get(button_num))) break;
-        		clicked_cards.add(cards.get(button_num));
+	        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+        		clicked_cards.add(board_cards.get(button_num));
 	        	if(clicked_cards.size() == 3) GUI_check_set();
 	            break;
 	    }}});
@@ -117,8 +210,8 @@ public class Gui {
 	          switch (e.type) {
 	          case SWT.Selection:
 	        	  int button_num = 1;
-		        	if(clicked_cards.contains(cards.get(button_num))) break;
-	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
 		        	if(clicked_cards.size() == 3) GUI_check_set();
 		            break;
 	    }}});
@@ -128,8 +221,8 @@ public class Gui {
 	          switch (e.type) {
 	          case SWT.Selection:
 	        	  int button_num = 2;
-		        	if(clicked_cards.contains(cards.get(button_num))) break;
-	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
 		        	if(clicked_cards.size() == 3) GUI_check_set();
 		            break;
 	    }}});
@@ -139,8 +232,8 @@ public class Gui {
 	          switch (e.type) {
 	          case SWT.Selection:
 	        	  int button_num = 3;
-		        	if(clicked_cards.contains(cards.get(button_num))) break;
-	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
 		        	if(clicked_cards.size() == 3) GUI_check_set();
 		            break;
 	    }}});
@@ -150,8 +243,8 @@ public class Gui {
 	          switch (e.type) {
 	          case SWT.Selection:
 	        	  int button_num = 4;
-		        	if(clicked_cards.contains(cards.get(button_num))) break;
-	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
 		        	if(clicked_cards.size() == 3) GUI_check_set();
 		            break;
 	    }}});
@@ -161,8 +254,8 @@ public class Gui {
 	          switch (e.type) {
 	          case SWT.Selection:
 	        	  int button_num = 5;
-		        	if(clicked_cards.contains(cards.get(button_num))) break;
-	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
 		        	if(clicked_cards.size() == 3) GUI_check_set();
 		            break;
 	    }}});
@@ -172,8 +265,8 @@ public class Gui {
 	          switch (e.type) {
 	          case SWT.Selection:
 	        	  int button_num = 6;
-		        	if(clicked_cards.contains(cards.get(button_num))) break;
-	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
 		        	if(clicked_cards.size() == 3) GUI_check_set();
 		            break;
 	    }}});
@@ -183,9 +276,9 @@ public class Gui {
 	          switch (e.type) {
 	          case SWT.Selection:
 	        	  int button_num = 7;
-		        	if(clicked_cards.contains(cards.get(button_num))) break;
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
 
-	        		clicked_cards.add(cards.get(button_num));
+	        		clicked_cards.add(board_cards.get(button_num));
 		        	if(clicked_cards.size() == 3) GUI_check_set();
 		            break;
 	    }}});
@@ -195,8 +288,8 @@ public class Gui {
 	          switch (e.type) {
 	          case SWT.Selection:
 	        	  int button_num = 8;
-		        	if(clicked_cards.contains(cards.get(button_num))) break;
-	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
 		        	if(clicked_cards.size() == 3) GUI_check_set();
 		            break;
 	    }}});
@@ -206,8 +299,8 @@ public class Gui {
 	          switch (e.type) {
 	          case SWT.Selection:
 	        	  int button_num = 9;
-		        	if(clicked_cards.contains(cards.get(button_num))) break;
-	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
 		        	if(clicked_cards.size() == 3) GUI_check_set();
 		            break;
 	    }}});
@@ -217,8 +310,8 @@ public class Gui {
 	          switch (e.type) {
 	          case SWT.Selection:
 	        	  int button_num = 10;
-		        	if(clicked_cards.contains(cards.get(button_num))) break;
-	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
 		        	if(clicked_cards.size() == 3) GUI_check_set();
 		            break;
 	    }}});
@@ -228,8 +321,80 @@ public class Gui {
 	          switch (e.type) {
 	          case SWT.Selection:
 	        	  int button_num = 11;
-		        	if(clicked_cards.contains(cards.get(button_num))) break;
-	        		clicked_cards.add(cards.get(button_num));
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
+	    }}});
+
+	    buttons.get(12).addListener(SWT.Selection, new Listener() {
+	        public void handleEvent(Event e) {
+	          switch (e.type) {
+	          case SWT.Selection:
+	        	  if(board_cards.size() <= 12) break;
+	        	  int button_num = 12;
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
+	    }}});
+
+	    buttons.get(13).addListener(SWT.Selection, new Listener() {
+	        public void handleEvent(Event e) {
+	          switch (e.type) {
+	          case SWT.Selection:
+	        	  if(board_cards.size() <= 12) break;
+	        	  int button_num = 13;
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
+	    }}});
+
+	    buttons.get(14).addListener(SWT.Selection, new Listener() {
+	        public void handleEvent(Event e) {
+	          switch (e.type) {
+	          case SWT.Selection:
+	        	  if(board_cards.size() <= 12) break;
+	        	  int button_num = 14;
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
+	    }}});
+
+	    buttons.get(15).addListener(SWT.Selection, new Listener() {
+	        public void handleEvent(Event e) {
+	          switch (e.type) {
+	          case SWT.Selection:
+	        	  if(board_cards.size() <= 15) break;
+	        	  int button_num = 15;
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
+	    }}});
+
+	    buttons.get(16).addListener(SWT.Selection, new Listener() {
+	        public void handleEvent(Event e) {
+	          switch (e.type) {
+	          case SWT.Selection:
+	        	  if(board_cards.size() <= 15) break;
+	        	  int button_num = 16;
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
+		        	if(clicked_cards.size() == 3) GUI_check_set();
+		            break;
+	    }}});
+
+	    buttons.get(17).addListener(SWT.Selection, new Listener() {
+	        public void handleEvent(Event e) {
+	          switch (e.type) {
+	          case SWT.Selection:
+	        	  if(board_cards.size() <= 15) break;
+	        	  int button_num = 17;
+		        	if(clicked_cards.contains(board_cards.get(button_num))) break;
+	        		clicked_cards.add(board_cards.get(button_num));
 		        	if(clicked_cards.size() == 3) GUI_check_set();
 		            break;
 	    }}});
@@ -239,7 +404,7 @@ public class Gui {
 		display = new Display();
 		shell = new Shell(display);
 		shell.setText("Set");
-		shell.setSize(600, 400);
+		shell.setSize(900, 400);
 		Image image = new Image(display, "images/set.jpg");
 		shell.setImage(image);
 		
@@ -252,7 +417,7 @@ public class Gui {
 		set.shuffle();
 		board_cards = set.initialization();
 		
-		initial_buttons(shell, board_cards);
+		initial_buttons();
 		
 		shell.open();
 		while(!shell.isDisposed())
