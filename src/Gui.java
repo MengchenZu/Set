@@ -77,14 +77,13 @@ public class Gui {
 			Shell congratulation = new Shell(shell);
 			congratulation.setText("Congratulation!");
 			congratulation.setSize(200, 200);
-			congratulation.open();
 
 			FillLayout fillLayout = new FillLayout();
 			fillLayout.type = SWT.VERTICAL;
 			congratulation.setLayout(fillLayout);
 			
 			Label congratulation_text = new Label(congratulation, SWT.READ_ONLY | SWT.CENTER);
-			congratulation_text.setText("Congratulation!!!");
+			congratulation_text.setText("\nCongratulation!!!\nClick the button to close the window.");
 			
 			//TODO restart
 			Button close = new Button(congratulation, SWT.PUSH);
@@ -97,6 +96,8 @@ public class Gui {
 		        	display.dispose();
 		            break;
 		    }}});
+			
+			congratulation.open();
 		}
 	}
 	
